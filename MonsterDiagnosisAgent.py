@@ -1,24 +1,51 @@
+import numpy as np
+
 class MonsterDiagnosisAgent:
     def __init__(self):
         # If you want to do any initial processing, add it here.
         pass
 
+    def convertToNumericNumpyArray(self, symptoms):
+        numeric_array = np.array([1 if v == '+' else -1 if v == '-' else 0 for v in symptoms.values()])
+        return numeric_array
+
+    def convertToDiseaseDictionary(self, np_symptoms):
+        disease_dict = {chr(65+i): '+' if n > 0 else ('0' if n == 0 else '-') for i, n in enumerate(np_symptoms)}
+        return disease_dict
+
+    def convertToDiseaseList(self, np_disease_list, diseases):
+        disease_list = []
+        for array in np_disease_list:
+            disease_dict = self.convertToDiseaseDictionary(array)
+            for key, value in diseases.items():
+                if value == disease_dict:
+                    disease_list.append(key)
+                    break
+        return disease_list
+
+
+    def recursiveDiagnostic(self, diseases, patient, range):
+        if np.all(np.sign(np.sum(diseases[:range], axis=0)) == np.sign(patient)):
+            return diseases[:range]
+        elif range >= len(diseases):
+            return None
+        else:
+            return self.recursiveDiagnostic(diseases, patient, range+1)
+
+    def diagnoseMonster(self, diseases, patient):
+        patient_np_array = self.convertToNumericNumpyArray(patient)
+        diseases_np_arrays = []
+        for disease in diseases.values():
+            diseases_np_arrays.append(self.convertToNumericNumpyArray(disease))
+        lists_of_diagnoses = []
+        for n in range(len(diseases_np_arrays)):
+            # index_start = np.where(diseases_np_arrays == disease)[0][0]
+            lists_of_diagnoses.append(self.recursiveDiagnostic(diseases_np_arrays[n:], patient_np_array, 1))
+        lists_of_diagnoses = [x for x in lists_of_diagnoses if x is not None]
+        simplest_np_diagnosis = min(lists_of_diagnoses, key=len)
+        diagnosis = self.convertToDiseaseList(simplest_np_diagnosis, diseases)
+        return diagnosis
+
     def solve(self, diseases, patient):
-        # Add your code here!
-        #
-        # The first parameter to this method is a list of diseases, represented as a
-        # list of 2-tuples. The first item in each 2-tuple is the name of a disease. The
-        # second item in each 2-tuple is a dictionary of symptoms of that disease, where
-        # the keys are letters representing vitamin names ("A" through "Z") and the values
-        # are "+" (for elevated), "-" (for reduced), or "0" (for normal).
-        #
-        # The second parameter to this method is a particular patient's symptoms, again
-        # represented as a dictionary where the keys are letters and the values are
-        # "+", "-", or "0".
-        #
-        # This method should return a list of names of diseases that together explain the
-        # observed symptoms. If multiple lists of diseases can explain the symptoms, you
-        # should return the smallest list. If multiple smallest lists are possible, you
-        # may return any sufficiently explanatory list.
-        pass
+        return self.diagnoseMonster(diseases, patient)
 
