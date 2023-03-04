@@ -1,16 +1,18 @@
 import numpy as np
-
+from itertools import combinations
 class MonsterDiagnosisAgent:
     def __init__(self):
         # If you want to do any initial processing, add it here.
         pass
 
-    def convertToNumericNumpyArray(self, symptoms):
+    @staticmethod
+    def convertToNumericNumpyArray(symptoms):
         numeric_array = np.array([1 if v == '+' else -1 if v == '-' else 0 for v in symptoms.values()])
         return numeric_array
 
-    def convertToDiseaseDictionary(self, np_symptoms):
-        disease_dict = {chr(65+i): '+' if n > 0 else ('0' if n == 0 else '-') for i, n in enumerate(np_symptoms)}
+    @staticmethod
+    def convertToDiseaseDictionary(np_symptoms):
+        disease_dict = {chr(65+i): '+' if v > 0 else ('0' if v == 0 else '-') for i, v in enumerate(np_symptoms)}
         return disease_dict
 
     def convertToDiseaseList(self, np_disease_list, diseases):
@@ -23,27 +25,22 @@ class MonsterDiagnosisAgent:
                     break
         return disease_list
 
-
-    def recursiveDiagnostic(self, diseases, patient, range):
-        if np.all(np.sign(np.sum(diseases[:range], axis=0)) == np.sign(patient)):
-            return diseases[:range]
-        elif range >= len(diseases):
-            return None
-        else:
-            return self.recursiveDiagnostic(diseases, patient, range+1)
+    @staticmethod
+    def diagnosisBruteForce(diseases, patient):
+        array_count = len(diseases)
+        for i in range(1, array_count + 1):
+            for disease_combination in combinations(diseases, i):
+                if np.all(np.sign(np.sum(disease_combination, axis=0)) == np.sign(patient)):
+                    return disease_combination
+        return []
 
     def diagnoseMonster(self, diseases, patient):
         patient_np_array = self.convertToNumericNumpyArray(patient)
         diseases_np_arrays = []
         for disease in diseases.values():
             diseases_np_arrays.append(self.convertToNumericNumpyArray(disease))
-        lists_of_diagnoses = []
-        for n in range(len(diseases_np_arrays)):
-            # index_start = np.where(diseases_np_arrays == disease)[0][0]
-            lists_of_diagnoses.append(self.recursiveDiagnostic(diseases_np_arrays[n:], patient_np_array, 1))
-        lists_of_diagnoses = [x for x in lists_of_diagnoses if x is not None]
-        simplest_np_diagnosis = min(lists_of_diagnoses, key=len)
-        diagnosis = self.convertToDiseaseList(simplest_np_diagnosis, diseases)
+        np_diagnosis = self.diagnosisBruteForce(diseases_np_arrays, patient_np_array)
+        diagnosis = self.convertToDiseaseList(np_diagnosis, diseases)
         return diagnosis
 
     def solve(self, diseases, patient):
